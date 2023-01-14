@@ -58,7 +58,7 @@ func calculateSucceededIndexes(job *batch.Job, pods []*v1.Pod) (orderedIntervals
 		ix := getCompletionIndex(p.Annotations)
 		// Succeeded Pod with valid index and, if tracking with finalizers,
 		// has a finalizer (meaning that it is not counted yet).
-		if p.Status.Phase == v1.PodSucceeded && ix != unknownCompletionIndex && ix < int(*job.Spec.Completions) && hasJobTrackingFinalizer(p) {
+		if p.Status.Phase == v1.PodSucceeded && ix != unknownCompletionIndex && ix < getCompletions(job) && hasJobTrackingFinalizer(p) {
 			newSucceeded.Insert(ix)
 		}
 	}
@@ -154,7 +154,7 @@ func succeededIndexesFromJob(job *batch.Job) orderedIntervals {
 	}
 	var result orderedIntervals
 	var lastInterval *interval
-	completions := int(*job.Spec.Completions)
+	completions := getCompletions(job)
 	for _, intervalStr := range strings.Split(job.Status.CompletedIndexes, ",") {
 		limitsStr := strings.Split(intervalStr, "-")
 		var inter interval
@@ -340,4 +340,11 @@ func completionModeStr(job *batch.Job) string {
 		return string(*job.Spec.CompletionMode)
 	}
 	return string(batch.NonIndexedCompletion)
+}
+
+func getCompletions(job *batch.Job) int {
+	if job.Spec.Completions == nil {
+		return int(*job.Spec.Parallelism)
+	}
+	return int(*job.Spec.Completions)
 }

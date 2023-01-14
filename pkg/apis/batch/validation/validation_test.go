@@ -237,6 +237,22 @@ func TestValidateJob(t *testing.T) {
 				},
 			},
 		},
+		"indexd job with completions=nil": {
+			job: batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "myjob",
+					Namespace: metav1.NamespaceDefault,
+					UID:       types.UID("1a2b3c"),
+				},
+				Spec: batch.JobSpec{
+					Selector:       validGeneratedSelector,
+					Template:       validPodTemplateSpecForGenerated,
+					CompletionMode: completionModePtr(batch.IndexedCompletion),
+					Completions:    nil,
+					Parallelism:    pointer.Int32Ptr(10),
+				},
+			},
+		},
 	}
 	for k, v := range successCases {
 		t.Run(k, func(t *testing.T) {
@@ -784,18 +800,6 @@ func TestValidateJob(t *testing.T) {
 				TTLSecondsAfterFinished: &negative,
 				Selector:                validGeneratedSelector,
 				Template:                validPodTemplateSpecForGenerated,
-			},
-		},
-		"spec.completions: Required value: when completion mode is Indexed": {
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "myjob",
-				Namespace: metav1.NamespaceDefault,
-				UID:       types.UID("1a2b3c"),
-			},
-			Spec: batch.JobSpec{
-				Selector:       validGeneratedSelector,
-				Template:       validPodTemplateSpecForGenerated,
-				CompletionMode: completionModePtr(batch.IndexedCompletion),
 			},
 		},
 		"spec.parallelism: must be less than or equal to 100000 when completion mode is Indexed": {

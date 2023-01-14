@@ -1512,8 +1512,18 @@ func activePodsForRemoval(job *batch.Job, pods []*v1.Pod, rmAtLeast int) []*v1.P
 	}
 
 	if len(rm) < rmAtLeast {
-		sort.Sort(controller.ActivePods(left))
-		rm = append(rm, left[:rmAtLeast-len(rm)]...)
+		numToDelete := rmAtLeast - len(rm)
+
+		// If completions is nil, we sort pods by completion index and remove
+		// the higher indices first. Otherwise, we attempt to delete pods in
+		// the earlier stages of the pod lifecycle whenever possible.
+		if job.Spec.Completions == nil {
+			sort.Sort(byCompletionIndex(left))
+			rm = append(rm, left[len(left)-numToDelete:]...)
+		} else {
+			sort.Sort(controller.ActivePods(left))
+			rm = append(rm, left[:numToDelete]...)
+		}
 	}
 	return rm
 }
